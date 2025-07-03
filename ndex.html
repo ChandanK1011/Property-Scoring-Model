@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Property Scoring Template</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
+    h2 { color: #333; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+    th, td { padding: 8px 12px; border: 1px solid #ccc; }
+    th { background: #f0f0f0; }
+    select { width: 100%; }
+    .summary { font-weight: bold; font-size: 1.2em; }
+  </style>
+</head>
+<body>
+
+  <h2>🏠 Property Scoring Template</h2>
+
+  <form id="scoringForm"></form>
+
+  <p class="summary">Total Score: <span id="totalScore">0</span> / 215</p>
+  <p class="summary">Risk Grade: <span id="grade">-</span></p>
+  <p class="summary">Recommended LTV: <span id="ltv">-</span></p>
+
+  <script>
+    const scoringData = {
+      "Location & Marketability (35)": [
+        ["Locality Type", [["Urban", 8], ["Semi-urban", 6], ["Rural", 4], ["Remote", 2]]],
+        ["Community Dominance", [["Diverse", 5], ["Dominated (>50%)", 2]]],
+        ["Approach Road Width", [[">20 ft", 5], ["12–20 ft", 3], ["<12 ft", 0]]],
+        ["Habitation Zone", [["Main Market", 5], ["Within Community", 3], ["Isolated", 1]]],
+        ["Proximity to Religious Structure", [[">100 m", 5], ["<100 m Neutral", 3], ["<100 m Sensitive", 0]]],
+        ["Within MC Limit?", [["Within MC", 2], ["Outside", 0]]],
+        ["Property Identification", [["Easy", 5], ["Not Easy", 0]]]
+      ],
+      "Technical Match & Ownership (25)": [
+        ["Ownership Type", [["Clear Sole", 10], ["Joint", 5], ["Family Undivided", 2]]],
+        ["Road Ownership", [["Public", 5], ["Family Shared", 3], ["Private Path", 1]]],
+        ["Site Boundaries match deed", [["Yes", 5], ["Partial", 3], ["No", 0]]],
+        ["Dimensions match deed", [["Yes", 5], ["Minor Mismatch", 2], ["No", 0]]]
+      ],
+      "Physical Features (25)": [
+        ["Facing", [["East/North", 5], ["West", 3], ["South", 1], ["Inauspicious", 0]]],
+        ["Shape & Layout", [["Rectangular", 5], ["Acceptable", 3], ["Irregular", 0]]],
+        ["Constructed vs Vacant Area", [["Fully Built", 10], ["Partially", 5], ["Vacant", 0]]],
+        ["Structural Age", [["<10 yrs", 5], ["10–20 yrs", 3], [">20 yrs", 1]]]
+      ],
+      "Construction Quality (25)": [
+        ["Material Used", [["RCC/Burnt Brick", 10], ["Pucca", 6], ["Semi-Pucca", 3], ["Kachha", 0]]],
+        ["Roof Type", [["RCC Slab", 5], ["Asbestos", 3], ["Thatched", 0]]],
+        ["Paint & Plaster Quality", [["Good", 5], ["Average", 3], ["Poor", 1]]],
+        ["Site Cleanliness", [["Very Clean", 5], ["Average", 3], ["Poor", 0]]]
+      ],
+      "Utilization & Income Alignment (20)": [
+        ["Usage Type", [["Owner-operated business", 10], ["Residential", 5], ["Idle", 0]]],
+        ["Loan Purpose Alignment", [["Directly aligned", 5], ["Indirect", 2], ["Unrelated", 0]]],
+        ["Major Community Income Source", [["Services+Shops+Mfg", 5], ["Agri+Retail", 3], ["Mainly Agri", 1]]]
+      ],
+      "Amenities & Services (15)": [
+        ["Drainage", [["Proper", 5], ["Partial", 3], ["Absent", 0]]],
+        ["Water/Electricity Access", [["Reliable", 5], ["Intermittent", 3], ["Poor", 0]]]
+      ],
+      "Special Flags (30)": [
+        ["Encroachment or Zoning Violation", [["None", 10], ["Borderline", 5], ["Illegal Use", 0]]],
+        ["Flood/Waterlogging Risk", [["No", 5], ["Occasional", 2], ["Frequent", 0]]],
+        ["Other Risk Triggers", [["None", 10], ["Minor", 5], ["Serious", 0]]],
+        ["Margin for Development/Extension", [["Ample", 5], ["Limited", 2], ["None", 0]]]
+      ],
+      "Valuation & Resale Potential (40)": [
+        ["Market Value Range", [[">₹50L", 10], ["₹20–50L", 7], ["<₹20L", 3]]],
+        ["LTV", [["<50%", 5], ["50%-55%", 3], [">55%", 0]]],
+        ["Distress Value as % of Market", [[">80%", 10], ["60–80%", 5], ["<60%", 0]]],
+        ["Property Demand in Area", [["High", 10], ["Moderate", 5], ["Poor", 0]]],
+        ["Past Sales Trend in Locality", [["Active", 5], ["Few sales", 2], ["Stagnant", 0]]],
+        ["Encumbrance Risk", [["Nil", 5], ["Minor", 2], ["Significant", 0]]]
+      ]
+    };
+
+    const form = document.getElementById('scoringForm');
+
+    Object.entries(scoringData).forEach(([section, questions]) => {
+      const table = document.createElement('table');
+      const caption = document.createElement('caption');
+      caption.innerText = section;
+      caption.style.fontWeight = "bold";
+      table.appendChild(caption);
+
+      const header = document.createElement('tr');
+      header.innerHTML = "<th>Parameter</th><th>Score</th>";
+      table.appendChild(header);
+
+      questions.forEach(([param, options]) => {
+        const row = document.createElement('tr');
+        const tdParam = document.createElement('td');
+        tdParam.innerText = param;
+
+        const tdSelect = document.createElement('td');
+        const select = document.createElement('select');
+        select.onchange = calculateTotal;
+
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.text = '-- Select --';
+        select.appendChild(defaultOption);
+
+        options.forEach(([label, value]) => {
+          const opt = document.createElement('option');
+          opt.value = value;
+          opt.text = `${label} (${value})`;
+          select.appendChild(opt);
+        });
+
+        tdSelect.appendChild(select);
+        row.appendChild(tdParam);
+        row.appendChild(tdSelect);
+        table.appendChild(row);
+      });
+
+      form.appendChild(table);
+    });
+
+    function calculateTotal() {
+      const selects = document.querySelectorAll('select');
+      let total = 0;
+      selects.forEach(select => {
+        if (select.value) total += parseInt(select.value);
+      });
+
+      document.getElementById('totalScore').innerText = total;
+
+      let grade = '-', ltv = '-';
+      if (total >= 180) { grade = 'A'; ltv = '65–70%'; }
+      else if (total >= 150) { grade = 'B'; ltv = '55–60%'; }
+      else if (total >= 120) { grade = 'C'; ltv = '40–50%'; }
+      else if (total >= 90) { grade = 'D'; ltv = '25–35%'; }
+      else { grade = 'E'; ltv = 'Reject/Low'; }
+
+      document.getElementById('grade').innerText = grade;
+      document.getElementById('ltv').innerText = ltv;
+    }
+  </script>
+</body>
+</html>
